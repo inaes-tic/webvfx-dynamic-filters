@@ -9,7 +9,10 @@ var express = require("express"),
     logger = mbc.logger().addLogger('webvfx_server'),
     url = require('url'),
     collections = mbc.config.Common.Collections,
-    uuid = require('node-uuid')
+    uuid = require('node-uuid'),
+    scheduler = require('./scheduler'),
+    webvfx_driver = require('./drivers/webvfx_driver'),
+    editor_driver = require('./drivers/editor_driver')
     ;
 
 var loggerStream = {
@@ -70,6 +73,12 @@ server.configure('production', function(){
   server.set('minify', true);
 });
 
+/* DRIVERS INITIALIZATION */
+var wdriver = new webvfx_driver();
+wdriver.processRoutes(server);
+var edriver = new editor_driver();
+edriver.processRoutes(server);
+
 require('./routes')(server);
 
 function debug_backend (backend) {
@@ -93,8 +102,9 @@ function id_middleware(req, res, next) {
 var db = mbc.db();
 var appbackend = backboneio.createBackend();
 var sketchbackend = backboneio.createBackend();
+var sketchschedulebackend = backboneio.createBackend();
 
-var backends = [ appbackend, sketchbackend ];
+var backends = [ appbackend, sketchbackend, sketchschedulebackend ];
 _(backends).each (debug_backend);
 
 appbackend.use(backboneio.middleware.configStore());
@@ -102,10 +112,14 @@ appbackend.use(backboneio.middleware.configStore());
 sketchbackend.use(id_middleware);
 sketchbackend.use(backboneio.middleware.mongoStore(db, collections.Sketchs, {}));
 
+sketchschedulebackend.use(id_middleware);
+sketchschedulebackend.use(backboneio.middleware.mongoStore(db, collections.SketchSchedules, {}));
+
 var io = backboneio.listen(server.listen(server.get('port'), function(){
     logger.info("Express server listening on port " + server.get('port') + " in mode " + server.settings.env);
 }), { appbackend: appbackend,
       sketchbackend: sketchbackend,
+      sketchschedulebackend: sketchschedulebackend,
     });
 
 io.configure('production', function(){
@@ -122,3 +136,5 @@ if (process.env.HEROKU) {
 }
 
 io.set('logger', logger); // Log socket.io with custom logger
+
+scheduler.initScheduler();

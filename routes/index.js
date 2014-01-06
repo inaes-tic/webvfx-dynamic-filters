@@ -6,16 +6,12 @@ module.exports = function(server) {
     , po2json = require('po2json')
     , i18n = require('i18n-abide')
     , _ = require('underscore')
-    , fs  = require('fs')
     , mbc = require('mbc-common')
     , conf = mbc.config.Webvfx
     , commonConf = mbc.config.Common
     , logger  = mbc.logger().addLogger('webvfx_routes')
-    , imageFiles = []
-    , watchr  = require('watchr')
-    , url = require('url')
-    , elements = []
-    , events = []
+    , moment = require('moment')
+    , uuid = require('node-uuid')
     ;
 
     var self = require ('mbc-common/models/App.js')
@@ -26,164 +22,10 @@ module.exports = function(server) {
         res.header("Access-Control-Allow-Headers", "X-Requested-With");
         next();
     };
-
-    accessRoutes = [ '/events', '/init', '/addImage', '/addBanner', '/addWidget', '/remove', '/removeAll', '/addEffect', '/move', '/uploadImage' ];
+    
+    var accessRoutes = [];
     _.each(accessRoutes, function(route) {
         server.all(route, accessControl);
-    });
-
-    server.get("/events", function(req, res) {
-        var event = _.findWhere(events, {consumed: false});
-        if (event) {
-            logger.debug(event);
-            event.consumed = true;
-            res.json(event);
-        } else {
-            logger.debug('Event: NONE');
-            res.json({"type": "none"});
-        }
-    });
-
-    server.get("/init", function(req, res) {
-        logger.debug(elements);
-        res.json({elements: elements});
-        events = _.reject(events, function(event) {
-            return event.type === 'add' || event.type === 'remove';
-        });
-    });
-
-    server.post('/addImage', function(req, res){
-        conf.Dirs.uploads
-        var full_url = url.format( { protocol: req.protocol, host: req.get('host'), pathname: 'uploads/' + req.body.images });
-        var element = {};
-        element.id = req.body.id;
-        element.type = 'image';
-        element.src = full_url;
-        element.top = req.body.top;
-        element.left = req.body.left;
-        element.bottom = req.body.bottom;
-        element.right = req.body.right;
-        element.height = req.body.height;
-        element.width = req.body.width;
-        element.zindex = req.body.zindex;
-        var event = {};
-        event.type = 'addImage';
-        event.element = element;
-        event.consumed = false;
-        events.push(event);
-        elements.push(element);
-        return res.json({});
-    });
-
-    server.post('/addBanner', function(req, res){
-        var element = {};
-        element.id = req.body.id;
-        element.type = 'banner';
-        element.top = req.body.top;
-        element.left = req.body.left;
-        element.bottom = req.body.bottom;
-        element.right = req.body.right;
-        element.height = req.body.height;
-        element.width = req.body.width;
-        element.background_color = req.body.background_color;
-        element.color = req.body.color;
-        element.text = req.body.text;
-        element.scroll = req.body.scroll;
-        var event = {};
-        event.type = 'addBanner';
-        event.element = element;
-        event.consumed = false;
-        events.push(event);
-        elements.push(element);
-        return res.json({});
-    });
-
-    server.post('/addWidget', function(req, res){
-        var element = {};
-        element.id = req.body.id;
-        element.type = 'widget';
-        element.options = JSON.parse(req.body.options);
-        element.zindex = req.body.zindex;
-        var event = {};
-        event.type = 'addWidget';
-        event.element = element;
-        event.consumed = false;
-        events.push(event);
-        elements.push(element);
-        return res.json({});
-    });
-
-    server.post('/remove', function(req, res){
-        var element = {};
-        element.id = req.body.elements;
-        var event = {};
-        event.type = 'remove';
-        event.element = element;
-        event.consumed = false;
-        events.push(event);
-        elements = _.reject(elements, function(item) {
-            return item.id === element.id;
-        });
-        return res.json({});
-    });
-
-    server.post('/removeAll', function(req, res){
-        events = [];
-        _.each(elements, function(e) {
-            var event = {};
-            event.type = 'remove';
-            event.element = {id: e.id};
-            event.consumed = false;
-            events.push(event);
-        })
-        elements = [];
-        return res.json({});
-    });
-
-    server.post('/addEffect', function(req, res){
-        var element = {};
-        element.id = req.body.elements;
-        var animation = {};
-        animation.name = req.body.effects;
-        animation.duration = req.body.duration;
-        animation.iterations = req.body.iterations;
-        animation.delay = req.body.delay;
-        var event = {};
-        event.type = 'animation';
-        event.element = element;
-        event.animation = animation;
-        event.consumed = false;
-        events.push(event);
-        return res.json({});
-    });
-
-    server.post('/move', function(req, res){
-        var element = {};
-        element.id = req.body.elements;
-        var move = {};
-        move.x = req.body.x;
-        move.y = req.body.y;
-        move.duration = req.body.duration;
-        var event = {};
-        event.type = 'move';
-        event.element = element;
-        event.move = move;
-        event.consumed = false;
-        events.push(event);
-        return res.json({});
-    });
-
-    server.post('/uploadImage', function(req, res){
-        fs.readFile(req.files.uploadedFile.path, function (err, data) {
-            if(err) {
-                logger.error('Uploading file: ' + err);
-                return;
-            }
-            var newPath = path.join(conf.Dirs.uploads, req.files.uploadedFile.name);
-            fs.writeFile(newPath, data, function (err) {
-                return res.json({});
-            });
-        });
     });
 
     server.get('/live.webm', function(req, res) {
@@ -216,6 +58,8 @@ module.exports = function(server) {
         require.resolve('jquery-browser/lib/jquery.js'),
         require.resolve('jqueryui-browser/ui/jquery-ui.js'),
         require.resolve('underscore/underscore.js'),
+        require.resolve('moment/moment.js'),
+        require.resolve('node-uuid/uuid.js'),
         require.resolve('backbone/backbone.js'),
         require.resolve('jed'),
         require.resolve('knockout/build/output/knockout-latest.js'),
@@ -289,6 +133,7 @@ module.exports = function(server) {
                            'alert',
                            'confirm',
                            'prompt',
+                           'schedule_prompt',
                           ];
 
     var getFileName = function (e) {
@@ -323,7 +168,7 @@ module.exports = function(server) {
     server.get('*',  function(req, res) {
         res.render('index', { name: conf.Branding.name, description: conf.Branding.description });
     });
-
+    
     return appCollection;
 
-}
+};
