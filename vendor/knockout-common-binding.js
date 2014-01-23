@@ -1,16 +1,18 @@
 ko.bindingHandlers.WebvfxSimpleWidget = {
     init: function(element, valueAccessor, allBindings, viewModel, bindingContext) {
         var value = valueAccessor();
-        var currentValue = ko.utils.unwrapObservable(value);
-        currentValue["el"] = $(element);
-        this.widget = new WebvfxSimpleWidget(currentValue);
+        var model = value.model().attributes;
+        model.options["el"] = $(element);
+        model.options.style['z-index'] = model.zindex;
+        this.widget = new WebvfxSimpleWidget(model.options);
     },
     update: function(element, valueAccessor, allBindingsAccessor) {
         var value = valueAccessor();
-        var currentValue = ko.utils.unwrapObservable(value);
-        currentValue["el"] = $(element);
+        var model = value.model().attributes;
+        model.options["el"] = $(element);
+        model.options.style['z-index'] = model.zindex;
         this.widget.remove();
-        this.widget = new WebvfxSimpleWidget(currentValue);
+        this.widget = new WebvfxSimpleWidget(model.options);
     }
 };
 
