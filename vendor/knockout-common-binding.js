@@ -23,6 +23,11 @@ ko.bindingHandlers.WebvfxAnimationWidget = {
         data["el"] = $(element);
         data["path"] = value.path;
         this.widget = new WebvfxAnimationWidget(data);
+        _.each(value.data, function(prop) {
+            if (prop.subscribe != undefined) {
+                prop();
+            }
+        });
     },
     update: function(element, valueAccessor, allBindingsAccessor) {
         var value = valueAccessor();
@@ -31,6 +36,11 @@ ko.bindingHandlers.WebvfxAnimationWidget = {
         data["path"] = value.path;
         this.widget.remove();
         this.widget = new WebvfxAnimationWidget(data);
+        _.each(value.data, function(prop) {
+            if (prop.subscribe != undefined) {
+                prop();
+            }
+        });
     }
 };
 
