@@ -37,6 +37,12 @@ for (d in conf.Dirs) {
 
 var app = express();
 
+var allowCrossDomain = function(req, res, next) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    next();
+};
+
 app.configure(function(){
     app.use(i18n.abide({
         supported_languages: ['en-US', 'es', 'db-LB', 'it-CH'],
@@ -52,6 +58,7 @@ app.configure(function(){
     app.use(express.compress());
     app.use(express.bodyParser());
     app.use(express.methodOverride());
+    app.use(allowCrossDomain);
     app.use(express.cookieParser());
     app.use(express.cookieSession({ secret: 'your secret here', cookie: { maxAge: common_conf.Others.maxage }}));
     app.use(require('less-middleware')({
