@@ -182,6 +182,7 @@ module.exports = function(app) {
         'backbone/backbone-min.js',
         'knockout.js/knockout.js',
         'knockback/knockback-core.min.js',
+        'screenfull/dist/screenfull.min.js',
     ];
 
     var vendorBower = [
@@ -243,7 +244,7 @@ module.exports = function(app) {
 
     app.get('/js/views.js', folio.serve(viewsJs));
 
-    var filterViews = [ 'liveview' ];
+    var filterViews = [ 'liveview', 'playerview' ];
     var viewsFilterJs = new folio.Glossary(filterViews.map(getViewFileName),
         { minify:app.get('minify') }
     );
@@ -343,7 +344,7 @@ module.exports = function(app) {
     // serve using express
     app.get('/js/templates.js', folio.serve(templateJs));
 
-    var filterTemplates = [ 'liveview' ];
+    var filterTemplates = [ 'liveview', 'playerview' ];
     var templateFilterJs = new folio.Glossary([
         jade_runtime,
         path.join(__dirname, '..', 'views/templates/js/header.js')].concat(
@@ -360,6 +361,10 @@ module.exports = function(app) {
 
     app.get('/filter', function(req, res) {
         res.render('filter', {});
+    });
+
+    app.get('/player', function(req, res) {
+        res.render('player', {});
     });
 
     app.get('*',  function(req, res) {
